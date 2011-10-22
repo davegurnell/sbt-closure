@@ -22,8 +22,6 @@ seq(ScriptedPlugin.scriptedSettings: _*)
 // Useful when inserting pause statements into the test scripts:
 scriptedBufferLog := false
 
-// lazy val default = scripted dependsOn(publishLocal) describedAs("Publishes locally and tests against example projects")
-// 
 // val publishTo = {
 //   val host = System.getenv("DEFAULT_REPO_HOST")
 //   val path = System.getenv("DEFAULT_REPO_PATH")
