@@ -22,11 +22,10 @@ seq(ScriptedPlugin.scriptedSettings: _*)
 // Useful when inserting pause statements into the test scripts:
 scriptedBufferLog := false
 
-// val publishTo = {
-//   val host = System.getenv("DEFAULT_REPO_HOST")
-//   val path = System.getenv("DEFAULT_REPO_PATH")
-//   val user = System.getenv("DEFAULT_REPO_USER")
-//   val keyfile = new File(System.getenv("DEFAULT_REPO_KEYFILE"))
-//   
-//   Resolver.sftp("Default Repo", host, path).as(user, keyfile)
-// }
+publishTo := {
+  val host = System.getenv("DEFAULT_REPO_HOST")
+  val path = System.getenv("DEFAULT_REPO_PATH")
+  val user = System.getenv("DEFAULT_REPO_USER")
+  val keyfile = new File(System.getenv("DEFAULT_REPO_KEYFILE"))
+  Some(Resolver.sftp("Default Repo", host, path).as(user, keyfile))
+}
