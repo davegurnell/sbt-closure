@@ -42,7 +42,7 @@ object Plugin extends sbt.Plugin {
             Nil
           
           case toCompile =>
-            toCompile.flatMap(_.compile(out.log))
+            toCompile.flatMap(_.compile(out.log, jsSources))
         }
     }
   

@@ -9,26 +9,15 @@ case class JsmSource(val src: File, val des: File) extends Source {
   
   def isJsm = false
   
-  lazy val imports: List[File] = {
-    val srcDirectory = src.getParent
-
+  lazy val imports: List[File] =
     lines.map(stripComments _).
           filterNot(isSkippable _).
-          map { line =>
-            //if(isUrl(line)) {
-            //  download(log, line) 
-            //} else {
-              new File(srcDirectory, line)
-            //}
-          }
-  }
-  
-  def closureSources: List[JSSourceFile] = 
-    // TODO: Mustache
-    //if(closureJsIsTemplated(path)) 
-    //  imports.map(in => JSSourceFile.fromCode(in, renderTemplate(path))
-    //else
-    imports.map(JSSourceFile.fromFile(_))
+          map { line => new File(src.getParent, line).getCanonicalFile }
+
+  /** Closure sources for this file (not its imports or parents). */
+  def closureSources: List[JSSourceFile] =
+    // TODO: If Mustache is enabled, transform and use JsSourceFile.fromString instead:
+    Nil
   
   // Downloading URLs ---------------------------
   

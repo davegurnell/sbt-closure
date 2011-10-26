@@ -10,9 +10,9 @@ object Source {
   
   def apply(src: File, des: File): Source =
     if(src.toString.trim.toLowerCase.endsWith(".jsm")) {
-      JsmSource(src, des)
+      JsmSource(src.getCanonicalFile, des.getCanonicalFile)
     } else {
-      JsSource(src, des)
+      JsSource(src.getCanonicalFile, des.getCanonicalFile)
     }
   
 }
@@ -31,9 +31,9 @@ trait Source {
   def imports: Seq[File]
   
   /** Compile the file and return the destination. */
-  def compile(log: Logger): Option[File] = {
+  def compile(log: Logger, sources: Sources): Option[File] = {
     log.info("Compiling Javascript source %s".format(des))
-    closureCompile(log)
+    closureCompile(log, sources)
   }
   
   /** Clean up the destination and any temporary files. */
@@ -44,10 +44,12 @@ trait Source {
   
   // Helpers ------------------------------------
   
+  /** Closure externs for this file (not its imports or parents). */
   def closureExterns: List[JSSourceFile] = Nil
   
+  /** Closure sources for this file (not its imports or parents). */
   def closureSources: List[JSSourceFile]
-
+  
   def closureLogLevel: java.util.logging.Level =
     java.util.logging.Level.OFF
   
@@ -59,15 +61,18 @@ trait Source {
     options
   }
 
-  def closureCompile(log: Logger): Option[File] = {
+  def closureCompile(log: Logger, sources: Sources): Option[File] = {
     val compiler = new jscomp.Compiler
     
     jscomp.Compiler.setLoggingLevel(closureLogLevel)
     
+    val myExterns = sources.closureExterns(this)
+    val mySources = sources.closureSources(this)
+    
     val result =
       compiler.compile(
-        closureExterns.toArray,
-        closureSources.toArray,
+        myExterns.toArray,
+        mySources.toArray,
         closureOptions)
     
     val errors = result.errors.toList

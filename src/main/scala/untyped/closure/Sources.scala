@@ -1,6 +1,7 @@
 package untyped
 package closure
 
+import com.google.javascript.jscomp._
 import sbt._
 import scala.collection._
 
@@ -29,6 +30,12 @@ case class Sources(val sources: List[Source]) {
     breadthFirstSearch(children _, List(a), Nil).
     filterNot(_ == a)
   
+  def closureExterns(a: Source): List[JSSourceFile] =
+    (a :: ancestors(a)).reverse.flatMap(_.closureExterns)
+
+  def closureSources(a: Source): List[JSSourceFile] =
+    (a :: ancestors(a)).reverse.flatMap(_.closureSources)
+
   def breadthFirstSearch(succ: (Source) => List[Source], open: List[Source], ans: List[Source]): List[Source] =
     open match {
       case Nil =>
@@ -54,6 +61,9 @@ case class Sources(val sources: List[Source]) {
       
       log.debug("  recompile?:")
       log.debug("    " + requiresRecompilation(source))
+
+      log.debug("  imports:")
+      source.imports.foreach(src => log.debug("    " + src))
       
       log.debug("  parents:")
       parents(source).foreach(src => log.debug("    " + src))
