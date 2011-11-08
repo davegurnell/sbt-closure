@@ -1,1 +1,1 @@
-addSbtPlugin("untyped" % "sbt-closure" % "0.6-SNAPSHOT")
+addSbtPlugin("untyped" % "sbt-js" % "0.6-SNAPSHOT")

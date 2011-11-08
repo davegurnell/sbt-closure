@@ -1,7 +1,7 @@
-SBT Closure Plugin
-==================
+SBT JS Plugin
+=============
 
-[Simple Build Tool] plugin for compiling Javascript filesfrom multiple sources using Google's [Closure compiler].
+[Simple Build Tool] plugin for compiling Javascript files from multiple sources using Google's [Closure compiler].
 
 Copyright (c) 2011 [Dave Gurnell] of [Untyped].
 
@@ -10,63 +10,104 @@ Copyright (c) 2011 [Dave Gurnell] of [Untyped].
 [Dave Gurnell]: http://boxandarrow.com
 [Untyped]: http://untyped.com
 
+Installation
+============
+
+For SBT 0.11:
+
+Create a `project/plugins.sbt` file and paste the following content into it:
+
+    resolvers += "Untyped Public Repo" at "http://repo.untyped.com"
+
+    addSbtPlugin("untyped" % "sbt-js" % "0.6-SNAPSHOT")
+
+Then, in your build.sbt file, put:
+
+    seq(jsSettings:_*)
+
+If you're using [xsbt-web-plugin](https://github.com/siasia/xsbt-web-plugin "xsbt-web-plugin"), add the output files to the webapp with:
+
+    // add managed resources to the webapp
+    (webappResources in Compile) <+= (resourceManaged in Compile)
+
+To change the directory that is scanned, use:
+
+    (sourceDirectory in (Compile, JsKeys.js)) <<= (sourceDirectory in Compile)(_ / "path" / "to" / "js-files")
+
+To make the js task run with compile:
+
+    // make compile depend on js
+    (compile in Compile) <<= compile in Compile dependsOn (JsKeys.js in Compile)
+
+The plugin is currently untested under SBT 0.10. If you manage to get it to work,
+let me know and I'll update these docs.
+
 Usage
 =====
 
-First, create a `project/plugins/Plugins.scala` file and paste the following 
-content into it:
+To compile Javascript sources, use the `js` command in sbt. Read the installation
+instructions above to see how to include Javascript compilation as part of the regular
+`compile` command.
 
-    import sbt._
+The default behaviour of the plugin is to scan your `src/main` directory
+and look for two types of files:
 
-    class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
-      val untypedRepo = "Untyped Repo" at "http://repo.untyped.com"
-      val closureCompiler = "untyped" % "sbt-closure" % "0.4"
-    }
+ - Javascript files, with extension `.js`
+ - Javascript manifest files, with extension `.jsm` or `.jsmanifest`
 
-This will give you the ability to use the plugin in your project file. For example:
+These files are compiled and minified using Google's Closure compiler and
+placed in equivalent locations under `target/scala-2.9.x/resource_managed`.
 
-    import sbt._
-    
-    class MyProject(info: ProjectInfo) extends DefaultWebProject(info)
-      with untyped.ClosureCompilerPlugin {
-    
-      // and so on...
-    
-    }
+Read on for a description of the handling for each type of file.
 
-The default behaviour of the plugin is to scan your `src/main/webapp` directory
-and look for files of extension `.jsmanifest`, or `.jsm` for short. These files
-should contain ordered lists of JavaScript source locations. For example:
+### *Require* statements in Javascript files
+
+You can add *require* statements to your Javascript files to specify dependencies
+on other files or URLs. Require statements can be of the following forms:
+
+    // require "path/to/my/file.js"
+
+    // require "http://mywebsite.com/path/to/my/file.js"
+
+Required files are *prepended* to the file they appear in, and the whole lot is
+passed through the Google Closure compiler for minification. Note the following:
+
+ - paths are resolved relative to the file they appear in;
+ 
+ - the position of a require statement in the source does not matter - dependencies
+   are always inserted just before the beginning of the file;
+
+ - if multiple require statements are present in a file, the dependencies are inlined
+   in the order they are required;
+
+ - dependencies can be recursive - files can require files that require files;
+ 
+ - woe betide you if you create a recursive dependencies :)
+
+### Javascript manifest files
+
+Javascript manifest files are a useful shorthand for building Javascript from a list
+of sources. A manifest contains an ordered list of JavaScript source locations. 
+For example:
 
     # You can specify remote files using URLs...
     http://code.jquery.com/jquery-1.5.1.js
-    
+
     # ...and local files using regular paths
     #    (relative to the location of the manifest):
     lib/foo.js
     bar.js
-    
+
     # Blank lines and bash-style comments are also supported.
     # These may be swapped for JS-style comments in the future.
 
-The plugin compiles this in two phases: first, it downloads and caches any
-remote scripts. Second, it feeds all of the specified scripts into the Closure
-compiler. The compiler outputs a file of the same name and relative path
-of the manifest, but with a `.js` extension. For example, if your manifest
-file is at `webapps/static/js/kitchen-sink.jsm` in the source tree, the final 
-path would be `webapps/static/js/kitchen-sink.js` in the target tree.
+The sources are cached and inlined into one large Javascript file, which is then
+passed to the Closure compiler. The compiler outputs a file of the same name and 
+relative path of the manifest, but with a `.js` extension. For example, if your manifest
+file is at `src/main/javascript/static/js/kitchen-sink.jsm` in the source tree, the final
+path would be `resource_managed/main/static/js/kitchen-sink.js` in the target tree.
 
-If, on compilation, the plugin finds remote scripts already cached on your
-filesystem, it won't try to download them again. Running `sbt clean` will
-delete the cache.
-
-You can change the compiler options by overriding the `closureCompilerOptions`
-method. See the source for details.
-
-Finally, you can execute the plugin's compilation step independently of
-`prepare-webapp` using `sbt compile-js`.
-
-Templating
+Templating - NOT YET IMPLEMENTED FOR SBT 0.11
 ================
 
 It is sometime useful to template Javascript files. For example, you might want
@@ -100,12 +141,15 @@ Parameters controlling templating are:
 Acknowledgements
 ================
 
-Based on the [Coffee Script SBT plugin], Copyright (c) 2010 Luke Amdor.
+v0.6+ for SBT 0.11 based on [less-sbt](https://github.com/softprops/less-sbt), Copyright (c) 2011 Doug Tangren.
+v0.1-v0.5 for SBT 0.7 based on [Coffee Script SBT plugin], Copyright (c) 2010 Luke Amdor.
 
 Heavily influenced by the [YUI Compressor SBT plugin] by Jon Hoffman.
 
 [Coffee Script SBT plugin]: https://github.com/rubbish/coffee-script-sbt-plugin
 [YUI Compressor SBT plugin]: https://github.com/hoffrocket/sbt-yui
+
+Thanks to [Tim Nelson](https://github.com/eltimn) for his work on the SBT 0.11 migration and dramatic improvements to this README.
 
 Licence
 =======

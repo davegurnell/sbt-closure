@@ -1,11 +1,11 @@
 package untyped
-package closure
+package js
 
 import com.google.javascript.jscomp._
 import sbt._
 import scala.collection._
 
-case class Sources(val sourceDir: File, targetDir: File, val downloadDir: File) {
+case class Sources(val log: Logger, val sourceDir: File, targetDir: File, val propertiesDir: File, val downloadDir: File) {
   
   // Adding sources -----------------------------
   
@@ -53,7 +53,7 @@ case class Sources(val sourceDir: File, targetDir: File, val downloadDir: File) 
       IO.relativize(downloadDir, file) getOrElse
       (throw new Exception("Could not determine destination filename for " + file))
     
-    new File(targetDir, des.replaceAll("[.]jsm(anifest)?$", ".js"))
+    new File(targetDir, des.replaceAll("[.]jsm(anifest)?$", ".js").replaceAll("[.]template", ""))
   }
   
   // Downloading and caching URLs ---------------
@@ -75,13 +75,7 @@ case class Sources(val sourceDir: File, targetDir: File, val downloadDir: File) 
   // Reasoning about sources --------------------
   
   def sourcesRequiringRecompilation: List[Source] =
-    sources filter (requiresRecompilation _)
-  
-  def requiresRecompilation(a: Source): Boolean =
-    !a.des.exists ||
-    (a.src newerThan a.des) ||
-    a.parents.exists(b => b.src newerThan a.src) ||
-    ancestors(a).exists(requiresRecompilation _)
+    sources filter (_.requiresRecompilation)
   
   def parents(a: Source): List[Source] =
     a.parents
@@ -116,7 +110,7 @@ case class Sources(val sourceDir: File, targetDir: File, val downloadDir: File) 
         }
     }
 
-  def dump(log: Logger): Unit =
+  def dump: Unit =
     sources.foreach { source =>
       log.debug("Javascript source:")
       
@@ -125,9 +119,15 @@ case class Sources(val sourceDir: File, targetDir: File, val downloadDir: File) 
 
       log.debug("  des:")
       log.debug("    " + source.des)
+
+      log.debug("  templated?:")
+      log.debug("    " + (source match {
+                           case source: JsSource => source.isTemplated
+                           case _                => false
+                          }))
       
       log.debug("  recompile?:")
-      log.debug("    " + requiresRecompilation(source))
+      log.debug("    " + source.requiresRecompilation)
 
       log.debug("  parents:")
       parents(source).foreach(src => log.debug("    " + src))

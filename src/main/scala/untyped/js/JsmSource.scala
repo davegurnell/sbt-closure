@@ -1,5 +1,5 @@
 package untyped
-package closure
+package js
 
 import com.google.javascript.jscomp._
 import sbt._
@@ -12,16 +12,9 @@ case class JsmSource(val sources: Sources, val src: File, val des: File) extends
       line <- lines.map(stripComments _).filterNot(isSkippable _)
     } yield sources.getSource(line, this)
 
-  /** Closure sources for this file (not its imports or parents). */
+  /** Closure sources for this file (not its parents). */
   def closureSources: List[JSSourceFile] =
-    // TODO: If Mustache is enabled, transform and use JsSourceFile.fromString instead:
     Nil
-  
-  // Downloading URLs ---------------------------
-  
-  //def download(log: Logger, url: String): File = {
-  //  val tempDirectory = des.getParent
-  //}
   
   // Helpers ------------------------------------
 
