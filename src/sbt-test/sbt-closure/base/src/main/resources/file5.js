@@ -1,4 +1,4 @@
-// require "file4.jsm"
+// require "../scala/dir2/file4.jsm"
 
 var name = "Henry";
 

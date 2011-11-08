@@ -5,7 +5,7 @@ import com.google.javascript.jscomp._
 import sbt._
 import scala.collection._
 
-case class Sources(val sources: List[Source]) {
+case class Sources(val sources: List[Source], val downloadDir: File) {
   
   def sourcesRequiringRecompilation: List[Source] =
     sources filter (requiresRecompilation _)

@@ -69,6 +69,12 @@ trait Source {
     val myExterns = sources.closureExterns(this)
     val mySources = sources.closureSources(this)
     
+    log.debug("  externs:")
+    myExterns.foreach(x => log.debug("    " + x)) 
+
+    log.debug("  sources:")
+    mySources.foreach(x => log.debug("    " + x)) 
+    
     val result =
       compiler.compile(
         myExterns.toArray,
