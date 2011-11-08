@@ -5,7 +5,14 @@ import com.google.javascript.jscomp._
 import sbt._
 import scala.collection._
 
-case class Sources(val log: Logger, val sourceDir: File, targetDir: File, val propertiesDir: File, val downloadDir: File) {
+case class Sources(
+    val log: Logger,
+    val sourceDir: File,
+    val targetDir: File,
+    val propertiesDir: File,
+    val downloadDir: File,
+    val compilerOptions: CompilerOptions
+  ) {
   
   // Adding sources -----------------------------
   

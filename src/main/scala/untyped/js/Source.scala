@@ -48,7 +48,7 @@ trait Source {
       compiler.compile(
         myExterns.toArray,
         mySources.toArray,
-        closureOptions)
+        sources.compilerOptions)
     
     val errors = result.errors.toList
     val warnings = result.warnings.toList
@@ -88,12 +88,4 @@ trait Source {
   def closureLogLevel: java.util.logging.Level =
     java.util.logging.Level.OFF
   
-  // TODO: Push to Plugin
-  def closureOptions = {
-    val options = new CompilerOptions
-    options.variableRenaming = VariableRenamingPolicy.OFF
-    options.prettyPrint = false
-    options
-  }
-
 }

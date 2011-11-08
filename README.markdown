@@ -23,7 +23,7 @@ Create a `project/plugins.sbt` file and paste the following content into it:
 
 Then, in your build.sbt file, put:
 
-    seq(jsSettings:_*)
+    seq(jsSettings : _*)
 
 If you're using [xsbt-web-plugin](https://github.com/siasia/xsbt-web-plugin "xsbt-web-plugin"), add the output files to the webapp with:
 
@@ -34,10 +34,22 @@ To change the directory that is scanned, use:
 
     (sourceDirectory in (Compile, JsKeys.js)) <<= (sourceDirectory in Compile)(_ / "path" / "to" / "js-files")
 
-To make the js task run with compile:
+To cause the `js` task to run automatically when you run `compile`:
 
     // make compile depend on js
     (compile in Compile) <<= compile in Compile dependsOn (JsKeys.js in Compile)
+
+To use pretty-printing instead of regular Javascript minification:
+
+    (JsKeys.prettyPrint in (Compile, JsKeys.js)) := true
+
+To use more aggressive variable renaming (producing smaller output files that are less likely to work without care):
+
+    (JsKeys.variableRenamingPolicy in (Compile, JsKeys.js)) := VariableRenamingPolicy.ALL
+
+Or to turn variable renaming off altogether:
+
+    (JsKeys.variableRenamingPolicy in (Compile, JsKeys.js)) := VariableRenamingPolicy.NONE
 
 The plugin is currently untested under SBT 0.10. If you manage to get it to work,
 let me know and I'll update these docs.
@@ -82,7 +94,7 @@ passed through the Google Closure compiler for minification. Note the following:
 
  - dependencies can be recursive - files can require files that require files;
  
- - woe betide you if you create a recursive dependencies :)
+ - woe betide you if you create recursive dependencies between your files :)
 
 ### Javascript manifest files
 
@@ -107,36 +119,22 @@ relative path of the manifest, but with a `.js` extension. For example, if your 
 file is at `src/main/javascript/static/js/kitchen-sink.jsm` in the source tree, the final
 path would be `resource_managed/main/static/js/kitchen-sink.js` in the target tree.
 
-Templating - NOT YET IMPLEMENTED FOR SBT 0.11
-================
+Templating
+==========
 
 It is sometime useful to template Javascript files. For example, you might want
-scripts to refer to localhost while developing and your live server when
-deployed. This plugin supports templating Javascript files using the [Mustache]
-format and [Lift style properties] (though the implementation has no dependency
-on Lift).
+scripts to refer to `localhost` during development and your live server once deployed.
 
-In summary, properties are looked for in `src/main/resources/prop` (by default;
-see below for customization). They are in the standard `key=value` Java format. If you
-aren't interested in changing your properties depending on your build
-configuration just place the properties in `default.props`. Otherwise property
-files should be named `modeName.props`, where modeName is the setting of the
-`run.mode` system property, which can take on values of `test`, `staging`,
-`production`, `pilot`, or `default`. If `run.mode` is not set, `default` is
-assumed.
+Javascript files with the extension `.template.js` are passed through a [Mustache]
+template processor before being passed to the Closure compiler.
 
-Any Javascript file that contains `.template` will be passed through a Mustache
-template processor before being processed by the Google compiler.
-
-Parameters controlling templating are:
-
-   - `closureJsIsTemplated` is function that indicates if a given Javascript
-     file should be run through the template processor
-
-   - `closurePropertiesPath` determines where properties are found
+Property names and values are drawn from a properties file that is located and parsed
+in an identical manner to the Lift web framework (though the implementation has no 
+dependency on Lift). The default location for property files is `src/main/resources/props`.
+See the [Lift documentation] for file formats and naming conventions.
 
 [Mustache]: http://mustache.github.com/
-[Lift style]: http://www.assembla.com/spaces/liftweb/wiki/Properties
+[Lift documentation]: http://www.assembla.com/spaces/liftweb/wiki/Properties
 
 Acknowledgements
 ================
