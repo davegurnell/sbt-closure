@@ -9,21 +9,20 @@ import com.samskivert.mustache.{Mustache,Template}
 
 object JsSource {
 
-  val importRegex = """   //[ \t]*require[ \t]*"([^"]+)"   """.trim.r
+  val importRegex =
+    """
+    //[ \t]*require[ \t]*"(.+)"$
+    """.trim.r
 
 }
 
-case class JsSource(val src: File, val des: File) extends Source {
+case class JsSource(val sources: Sources, val src: File, val des: File) extends Source {
   
-  def isJsm = false
-
-  val srcDirectory = new File(src.getParent)
-  
-  lazy val imports: Seq[File] =
+  lazy val parents: List[Source] =
     for {
       line <- IO.readLines(src).map(_.trim).toList
       name <- JsSource.importRegex.findAllIn(line).matchData.map(_.group(1)).toList
-    } yield new File(srcDirectory, name).getCanonicalFile
+    } yield sources.getSource(name, this)
 
   /** Closure sources for this file (not its imports or parents). */
   def closureSources: List[JSSourceFile] =

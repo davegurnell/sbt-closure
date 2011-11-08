@@ -5,7 +5,74 @@ import com.google.javascript.jscomp._
 import sbt._
 import scala.collection._
 
-case class Sources(val sources: List[Source], val downloadDir: File) {
+case class Sources(val sourceDir: File, targetDir: File, val downloadDir: File) {
+  
+  // Adding sources -----------------------------
+  
+  var sources: List[Source] = Nil
+  
+  def +=(file: File): Unit =
+    this += createSource(file)
+
+  def +=(url: URL): Unit =
+    this += createSource(downloadAndCache(url))
+
+  private def +=(source: Source): Unit =
+    if(!sources.contains(source)) {
+      sources = source :: sources
+      source.parents.foreach(this += _)
+    }
+  
+  def getSource(src: String, referredToBy: Source): Source =
+    if(src.matches("^https?:.*")) {
+      getSource(new URL(src))
+    } else {
+      getSource(new File(referredToBy.srcDirectory, src).getCanonicalFile)
+    }
+  
+  def getSource(src: URL): Source =
+    getSource(downloadAndCache(src))
+
+  def getSource(src: File): Source =
+    sources find (_.src == src) getOrElse createSource(src)
+
+  private def createSource(src: File): Source =
+    if(src.toString.trim.toLowerCase.endsWith(".jsm")) {
+      JsmSource(this, src.getCanonicalFile, srcToDes(src).getCanonicalFile)
+    } else {
+      JsSource(this, src.getCanonicalFile, srcToDes(src).getCanonicalFile)
+    }
+
+  def srcToDes(file: File) = {
+    println("sourceDir " + sourceDir)
+    println("downloadDir " + downloadDir)
+    println("file " + file)
+    
+    val des =
+      IO.relativize(sourceDir, file) orElse
+      IO.relativize(downloadDir, file) getOrElse
+      (throw new Exception("Could not determine destination filename for " + file))
+    
+    new File(targetDir, des.replaceAll("[.]jsm(anifest)?$", ".js"))
+  }
+  
+  // Downloading and caching URLs ---------------
+  
+  def downloadAndCache(url: URL): File = {
+    val file = downloadDir / url.toString.replaceAll("""[^-A-Za-z0-9.]""", "_")
+    
+    println("DOWNLOAD TO " + file)
+    
+    if(!file.exists) {
+      val content = scala.io.Source.fromInputStream(url.openStream).mkString
+      IO.createDirectory(downloadDir)
+      IO.write(file, content)
+    }
+    
+    file
+  }
+  
+  // Reasoning about sources --------------------
   
   def sourcesRequiringRecompilation: List[Source] =
     sources filter (requiresRecompilation _)
@@ -13,14 +80,14 @@ case class Sources(val sources: List[Source], val downloadDir: File) {
   def requiresRecompilation(a: Source): Boolean =
     !a.des.exists ||
     (a.src newerThan a.des) ||
-    a.imports.exists(_ newerThan a.src) ||
+    a.parents.exists(b => b.src newerThan a.src) ||
     ancestors(a).exists(requiresRecompilation _)
   
   def parents(a: Source): List[Source] =
-    sources filter(b => a.imports.contains(b.src))
+    a.parents
 
   def children(a: Source): List[Source] =
-    sources filter(b => b.imports.contains(a.src))
+    sources filter(b => b.parents.contains(a))
   
   def ancestors(a: Source): List[Source] =
     breadthFirstSearch(parents _, List(a), Nil).
@@ -62,9 +129,6 @@ case class Sources(val sources: List[Source], val downloadDir: File) {
       log.debug("  recompile?:")
       log.debug("    " + requiresRecompilation(source))
 
-      log.debug("  imports:")
-      source.imports.foreach(src => log.debug("    " + src))
-      
       log.debug("  parents:")
       parents(source).foreach(src => log.debug("    " + src))
       

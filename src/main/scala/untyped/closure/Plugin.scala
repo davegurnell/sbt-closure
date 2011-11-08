@@ -17,9 +17,6 @@ object Plugin extends sbt.Plugin {
   
   import JsKeys._
   
-  def jsFileOf(file: File, sourceDir: File, targetDir: File) =
-    Some(new File(targetDir, IO.relativize(sourceDir, file).get.replaceAll("[.]jsm(anifest)?$", ".js")))
-  
   def jsSourceFilesTask: Initialize[Task[Seq[File]]] =
     (streams, jsSources in js) map {
       (out, sources) => sources.sources.map(_.src)
@@ -28,13 +25,13 @@ object Plugin extends sbt.Plugin {
   def jsSourcesTask: Initialize[Task[Sources]] =
     (streams, sourceDirectory in js, resourceManaged in js, includeFilter in js, excludeFilter in js, downloadDirectory in js) map {
       (out, sourceDir, targetDir, includeFilter, excludeFilter, downloadDir) =>
-        val sources =
-          for {
-            src <- sourceDir.descendentsExcept(includeFilter, excludeFilter).get
-            des <- jsFileOf(src, sourceDir, targetDir)
-          } yield Source(src, des)
+        val sources = Sources(sourceDir, targetDir, downloadDir)
         
-        Sources(sources.toList, downloadDir)
+        for {
+          src <- sourceDir.descendentsExcept(includeFilter, excludeFilter).get
+        } sources += src
+      
+        sources
     }
   
   def jsCompilerTask =

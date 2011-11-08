@@ -6,34 +6,26 @@ import com.google.javascript.jscomp._
 import sbt._
 import scala.collection._
 
-object Source {
-  
-  def apply(src: File, des: File): Source =
-    if(src.toString.trim.toLowerCase.endsWith(".jsm")) {
-      JsmSource(src.getCanonicalFile, des.getCanonicalFile)
-    } else {
-      JsSource(src.getCanonicalFile, des.getCanonicalFile)
-    }
-  
-}
-
 trait Source {
+
+  def sources: Sources
   def src: File
   def des: File
-  
-  def isJsm: Boolean
-  
+
+  lazy val srcDirectory: File =
+    src.getParentFile
+
   /** Lines in the source file. */
   def lines: List[String] =
     IO.readLines(src).map(_.trim).toList
   
   /** Files that the source file depends on. */
-  def imports: Seq[File]
+  def parents: List[Source]
   
   /** Compile the file and return the destination. */
   def compile(log: Logger, sources: Sources): Option[File] = {
     log.info("Compiling Javascript source %s".format(des))
-    closureCompile(log, sources)
+    closureCompile(log)
   }
   
   /** Clean up the destination and any temporary files. */
@@ -61,7 +53,7 @@ trait Source {
     options
   }
 
-  def closureCompile(log: Logger, sources: Sources): Option[File] = {
+  def closureCompile(log: Logger): Option[File] = {
     val compiler = new jscomp.Compiler
     
     jscomp.Compiler.setLoggingLevel(closureLogLevel)

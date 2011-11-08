@@ -4,28 +4,35 @@ $ touch fixtures/last-compile-time
 $ sleep 1000
 > js
 
-# Check that the CSS files exist:
+# Check that the JS files exist:
 $ exists target/scala-2.9.1/resource_managed/main/resources/file1.js
 $ exists target/scala-2.9.1/resource_managed/main/scala/file2.js
 $ exists target/scala-2.9.1/resource_managed/main/resources/dir1/file3.js
 $ exists target/scala-2.9.1/resource_managed/main/scala/dir2/file4.js
 $ exists target/scala-2.9.1/resource_managed/main/resources/file5.js
+$ exists target/scala-2.9.1/resource_managed/main/resources/file6.js
 
-$ pause
+# Check that the temporary downloads exist:
+$ exists target/js-downloads/http___code.jquery.com_jquery-1.7.js
 
-# Check that the CSS files have the correct content:
+# Check that the JS files have the correct content:
 > contents target/scala-2.9.1/resource_managed/main/resources/file1.js      fixtures/file1.js
 > contents target/scala-2.9.1/resource_managed/main/scala/file2.js          fixtures/file2.js
 > contents target/scala-2.9.1/resource_managed/main/resources/dir1/file3.js fixtures/file3.js
 > contents target/scala-2.9.1/resource_managed/main/scala/dir2/file4.js     fixtures/file4.js
 > contents target/scala-2.9.1/resource_managed/main/resources/file5.js      fixtures/file5.js
+> contents target/scala-2.9.1/resource_managed/main/resources/file6.js      fixtures/file6.js
 
-# Check that the CSS files were updated by the last compile task:
+# Check that the temporary downloads have the correct content:
+> contents target/js-downloads/http___code.jquery.com_jquery-1.7.js         fixtures/jquery-1.7.js
+
+# Check that the JS files were updated by the last compile task:
 $ newer target/scala-2.9.1/resource_managed/main/resources/file1.js      fixtures/last-compile-time
 $ newer target/scala-2.9.1/resource_managed/main/scala/file2.js          fixtures/last-compile-time
 $ newer target/scala-2.9.1/resource_managed/main/resources/dir1/file3.js fixtures/last-compile-time
 $ newer target/scala-2.9.1/resource_managed/main/scala/dir2/file4.js     fixtures/last-compile-time
 $ newer target/scala-2.9.1/resource_managed/main/resources/file5.js      fixtures/last-compile-time
+$ newer target/scala-2.9.1/resource_managed/main/resources/file6.js      fixtures/last-compile-time
 
 # Touch some (but not all) of the source files:
 $ touch src/main/resources/file1.js
@@ -50,3 +57,11 @@ $ newer fixtures/last-compile-time                                       target/
 $ newer target/scala-2.9.1/resource_managed/main/resources/dir1/file3.js fixtures/last-compile-time
 $ newer target/scala-2.9.1/resource_managed/main/scala/dir2/file4.js     fixtures/last-compile-time
 $ newer target/scala-2.9.1/resource_managed/main/resources/file5.js      fixtures/last-compile-time
+$ newer fixtures/last-compile-time                                       target/scala-2.9.1/resource_managed/main/resources/file6.js
+
+# Clean everything:
+> clean
+
+# Check the target and js-downloads directories have been deleted:
+$ absent target/scala-2.9.1/resource_managed
+$ absent target/js-downloads

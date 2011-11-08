@@ -5,14 +5,12 @@ import com.google.javascript.jscomp._
 import sbt._
 import scala.collection._
 
-case class JsmSource(val src: File, val des: File) extends Source {
+case class JsmSource(val sources: Sources, val src: File, val des: File) extends Source {
   
-  def isJsm = false
-  
-  lazy val imports: List[File] =
-    lines.map(stripComments _).
-          filterNot(isSkippable _).
-          map { line => new File(src.getParent, line).getCanonicalFile }
+  lazy val parents: List[Source] =
+    for {
+      line <- lines.map(stripComments _).filterNot(isSkippable _)
+    } yield sources.getSource(line, this)
 
   /** Closure sources for this file (not its imports or parents). */
   def closureSources: List[JSSourceFile] =
